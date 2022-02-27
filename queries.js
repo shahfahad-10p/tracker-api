@@ -15,6 +15,7 @@ const connectionString = "postgresql://my:admin@localhost:5432/testdb";
 let pool;
 
 if (isProduction) {
+  console.log('RUNNING FOR PRODCUTION');
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
@@ -22,6 +23,7 @@ if (isProduction) {
     },
   });
 } else {
+  console.log('RUNNING FOR DEVELOPMENT');
   pool = new Pool({
     connectionString,
   });
@@ -32,8 +34,10 @@ if (isProduction) {
 // });
 
 const getUsers = (request, response) => {
+  console.log('POOL : GET USERS');
   pool.query("SELECT * FROM users ORDER BY id ASC", (error, results) => {
     if (error) {
+      console.log('ERROR : GET USERS', error);
       throw error;
     }
     response.status(200).json(results.rows);
