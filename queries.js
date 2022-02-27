@@ -98,6 +98,7 @@ const deleteUser = (request, response) => {
 };
 
 module.exports = {
+  pool,
   getUsers,
   getUserById,
   createUser,
