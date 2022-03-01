@@ -16,7 +16,7 @@ app.use(
   })
 );
 
-const whitelist = ["http://localhost:3001"];
+const whitelist = ["http://localhost:3001", "https://tracker-m11.surge.sh"];
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || whitelist.indexOf(origin) !== -1) {
