@@ -1,5 +1,14 @@
 const { pool } = require("../../queries");
 
+const getTrackers = (request, response) => {
+  pool.query(`SELECT * FROM tracker;`, (error, results) => {
+    if (error) {
+      throw error;
+    }
+    response.status(200).json({ trackers: results.rows });
+  });
+};
+
 const setTracker = (request, response) => {
   const { name, latitude, longitude } = request.body;
   pool.query(
@@ -19,5 +28,6 @@ const setTracker = (request, response) => {
 };
 
 module.exports = {
+  getTrackers,
   setTracker,
 };

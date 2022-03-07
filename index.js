@@ -44,6 +44,7 @@ app.post('/users', db.createUser)
 app.put('/users/:id', db.updateUser)
 app.delete('/users/:id', db.deleteUser)
 
+app.get('/trackers', tracker.getTrackers);
 app.put('/tracker', tracker.setTracker);
 
 app.listen(port, () => {
