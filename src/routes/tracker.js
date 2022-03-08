@@ -9,6 +9,39 @@ const getTrackers = (request, response) => {
   });
 };
 
+const getTrackerGeoJson = async (request, response) => {
+  const trackerName = request.params.name;
+
+  try {
+    console.log("GET GEOJSON PARAMS : ", trackerName);
+    const dbResult = await pool.query(`SELECT * FROM archive WHERE name=$1;`, [
+      trackerName,
+    ]);
+
+    const geojson = {
+      type: "FeatureCollection",
+      features: [],
+    };
+
+    dbResult.rows.forEach((event) => {
+      const feature = {
+        type: "Feature",
+        properties: {
+          name: event.name,
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [event.latitude, event.longitude],
+        },
+      };
+      geojson.features.push(feature);
+    });
+
+    console.log("GET GEOJSON : ", geojson);
+    response.status(200).json(geojson);
+  } catch (error) {}
+};
+
 const setTracker = async (request, response) => {
   const { name, latitude, longitude } = request.body;
   console.log("SET TRACKER : ", request.body);
@@ -40,4 +73,5 @@ const setTracker = async (request, response) => {
 module.exports = {
   getTrackers,
   setTracker,
+  getTrackerGeoJson,
 };

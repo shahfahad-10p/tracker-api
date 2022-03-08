@@ -50,6 +50,7 @@ app.delete("/users/:id", db.deleteUser);
 
 app.get("/trackers", tracker.getTrackers);
 app.put("/tracker", tracker.setTracker);
+app.get("/tracker/:name/geojson", tracker.getTrackerGeoJson);
 
 app.listen(port, () => {
   console.log(`App running on port ${port}.`);
