@@ -9,22 +9,32 @@ const getTrackers = (request, response) => {
   });
 };
 
-const setTracker = (request, response) => {
+const setTracker = async (request, response) => {
   const { name, latitude, longitude } = request.body;
-  pool.query(
-    `INSERT INTO public.tracker ("name", latitude, longitude)
-    VALUES($1, $2, $3)
-    on conflict (name)
-    do
-      UPDATE set latitude=$2, longitude=$3;`,
-    [name, latitude, longitude],
-    (error, results) => {
-      if (error) {
-        throw error;
-      }
-      response.status(200).json(request.body);
+  console.log("SET TRACKER : ", request.body);
+
+  try {
+    await pool.query(
+      `INSERT INTO public.tracker ("name", latitude, longitude)
+      VALUES($1, $2, $3)
+      on conflict (name)
+      do
+        UPDATE set latitude=$2, longitude=$3;`,
+      [name, latitude, longitude]
+    );
+
+    await pool.query(
+      `INSERT INTO public.archive ("name", latitude, longitude)
+      VALUES($1, $2, $3)`,
+      [name, latitude, longitude]
+    );
+  } catch (error) {
+    if (error) {
+      response.status(400).json(error);
+      throw error;
     }
-  );
+  }
+  response.status(200).json(request.body);
 };
 
 module.exports = {
