@@ -43,7 +43,7 @@ const getTrackerGeoJson = async (request, response) => {
 };
 
 const setTracker = async (request, response) => {
-  const { name, latitude, longitude } = request.body;
+  const { name, latitude, longitude, dateTime } = request.body;
   console.log("SET TRACKER : ", request.body);
 
   try {
@@ -57,9 +57,9 @@ const setTracker = async (request, response) => {
     );
 
     await pool.query(
-      `INSERT INTO public.archive ("name", latitude, longitude)
-      VALUES($1, $2, $3)`,
-      [name, latitude, longitude]
+      `INSERT INTO public.archive ("name", latitude, longitude, date_time, date_time_z)
+      VALUES($1, $2, $3, $4, $5)`,
+      [name, latitude, longitude, dateTime, dateTime]
     );
   } catch (error) {
     if (error) {
