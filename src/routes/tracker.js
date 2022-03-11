@@ -31,7 +31,7 @@ const getTrackerGeoJson = async (request, response) => {
         },
         geometry: {
           type: "Point",
-          coordinates: [event.latitude, event.longitude],
+          coordinates: [event.longitude, event.latitude],
         },
       };
       geojson.features.push(feature);
