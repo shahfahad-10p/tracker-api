@@ -4,6 +4,7 @@ const cors = require("cors");
 
 const db = require("./queries.js");
 const tracker = require("./src/routes/tracker");
+const region = require("./src/routes/region");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -49,8 +50,12 @@ app.put("/users/:id", db.updateUser);
 app.delete("/users/:id", db.deleteUser);
 
 app.get("/trackers", tracker.getTrackers);
+app.post("/tracker", tracker.addTracker);
 app.put("/tracker", tracker.setTracker);
 app.get("/tracker/:name/geojson", tracker.getTrackerGeoJson);
+
+app.get("/regions", region.getRegions);
+app.post("/region", region.addRegion);
 
 app.listen(port, () => {
   console.log(`App running on port ${port}.`);
