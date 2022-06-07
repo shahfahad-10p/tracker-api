@@ -4,12 +4,15 @@ const { point, polygon } = require("@turf/helpers");
 const { sendEmail } = require("../services/email");
 
 const getTrackers = (request, response) => {
-  pool.query(`SELECT * FROM tracker;`, (error, results) => {
-    if (error) {
-      throw error;
+  pool.query(
+    `SELECT t.*, r.name as "regionName" from tracker t LEFT OUTER JOIN regions r ON t.region_id = r.id;`,
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      response.status(200).json({ trackers: results.rows });
     }
-    response.status(200).json({ trackers: results.rows });
-  });
+  );
 };
 
 const getTrackerGeoJson = async (request, response) => {
@@ -48,8 +51,6 @@ const getTrackerGeoJson = async (request, response) => {
 const addTracker = async (request, response) => {
   const { name, email } = request.body;
 
-  console.log("ON ADD TRACKER REQUEST", name, email);
-
   try {
     pool.query(
       `INSERT INTO public.tracker 
@@ -81,22 +82,6 @@ const setTracker = async (request, response) => {
   let regions = [];
 
   try {
-    await pool.query(
-      `INSERT INTO public.tracker ("name", latitude, longitude)
-      VALUES($1, $2, $3)
-      on conflict (name)
-      do
-        UPDATE set latitude=$2, longitude=$3 RETURNING *;`,
-      [name, latitude, longitude],
-      (error, results) => {}
-    );
-
-    await pool.query(
-      `INSERT INTO public.archive ("name", latitude, longitude, date_time, date_time_z)
-      VALUES($1, $2, $3, $4, $5) RETURNING *`,
-      [name, latitude, longitude, dateTime, dateTime]
-    );
-
     await pool.query(`SELECT * FROM regions;`, (error, results) => {
       if (error) {
         throw error;
@@ -104,6 +89,7 @@ const setTracker = async (request, response) => {
       regions = results.rows;
 
       const pointToCheck = point([longitude, latitude]);
+      let regionId;
 
       regions.every((region) => {
         const polyStringArray = region.polygon.split(";");
@@ -118,17 +104,34 @@ const setTracker = async (request, response) => {
         );
 
         if (isPointInPoly) {
+          regionId = region.id;
           const emailContent = `Tracker : ${name}, Region : ${region.name}`;
           sendEmail(emailContent);
 
-          console.log("POINT IN POLY : ", pointToCheck, region.name);
+          console.log("POINT IN POLY : ", pointToCheck, region.name, regionId);
 
           return false;
         }
         return true;
       });
 
-      response.status(200).json(request.body);
+      pool.query(
+        `INSERT INTO public.tracker ("name", latitude, longitude, region_id)
+        VALUES($1, $2, $3, $4)
+        on conflict (name)
+        do
+          UPDATE set latitude=$2, longitude=$3, region_id=$4 RETURNING *;`,
+        [name, latitude, longitude, regionId],
+        (error, results) => {
+          response.status(200).json(results.rows[0]);
+        }
+      );
+
+      pool.query(
+        `INSERT INTO public.archive ("name", latitude, longitude, date_time, date_time_z)
+        VALUES($1, $2, $3, $4, $5) RETURNING *`,
+        [name, latitude, longitude, dateTime, dateTime]
+      );
     });
   } catch (error) {
     if (error) {
