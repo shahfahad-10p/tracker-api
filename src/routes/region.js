@@ -1,12 +1,19 @@
 const { pool } = require("../../queries");
 
 const getRegions = (request, response) => {
-  pool.query(`SELECT * FROM regions;`, (error, results) => {
-    if (error) {
-      throw error;
+  pool.query(
+    `SELECT r.*, COUNT(t.region_id) AS trackerCount 
+    FROM regions r 
+    LEFT OUTER JOIN tracker t 
+    ON r.id = t.region_id 
+    GROUP BY r.id;`,
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      response.status(200).json({ regions: results.rows });
     }
-    response.status(200).json({ regions: results.rows });
-  });
+  );
 };
 
 const addRegion = (request, response) => {
