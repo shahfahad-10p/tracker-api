@@ -141,9 +141,30 @@ const setTracker = async (request, response) => {
   }
 };
 
+const deleteTracker = (request, response) => {
+  const trackerId = request.params.id;
+
+  try {
+    pool.query(
+      `DELETE FROM tracker WHERE id =$1;`,
+      [trackerId],
+      (error, results) => {
+        if (error) {
+          response.status(400).json(error);
+          throw error;
+        } else {
+          response.status(200).json();
+        }
+      }
+    );
+  } catch (error) {}
+  response.status(200).json({});
+};
+
 module.exports = {
   getTrackers,
   addTracker,
   setTracker,
   getTrackerGeoJson,
+  deleteTracker,
 };

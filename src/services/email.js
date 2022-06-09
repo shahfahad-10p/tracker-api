@@ -12,6 +12,8 @@ const msg = {
 };
 
 const sendEmail = (text) => {
+
+  // TODO FORMAT EMAIL
   msg.html = `<strong>${text}<strong>`;
   sgMail
     .send(msg)

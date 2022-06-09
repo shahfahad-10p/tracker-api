@@ -53,9 +53,11 @@ app.get("/trackers", tracker.getTrackers);
 app.post("/tracker", tracker.addTracker);
 app.put("/tracker", tracker.setTracker);
 app.get("/tracker/:name/geojson", tracker.getTrackerGeoJson);
+app.delete("/tracker/:id", tracker.deleteTracker);
 
 app.get("/regions", region.getRegions);
 app.post("/region", region.addRegion);
+app.delete("/region/:regionId", region.deleteRegion);
 
 app.listen(port, () => {
   console.log(`App running on port ${port}.`);

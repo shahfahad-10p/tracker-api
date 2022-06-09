@@ -30,7 +30,25 @@ const addRegion = (request, response) => {
   );
 };
 
+const deleteRegion = (request, response) => {
+  const id = request.params.regionId;
+  console.log("REQ PARAMS ID : ", id);
+
+  try {
+    pool.query(`DELETE FROM regions WHERE id =$1;`, [id], (error, results) => {
+      if (error) {
+        response.status(400).json(error);
+        throw error;
+      } else {
+        response.status(200).json();
+      }
+    });
+  } catch (error) {}
+  response.status(200).json({});
+};
+
 module.exports = {
   getRegions,
   addRegion,
+  deleteRegion,
 };
