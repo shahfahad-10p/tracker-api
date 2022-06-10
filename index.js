@@ -54,6 +54,7 @@ app.post("/tracker", tracker.addTracker);
 app.put("/tracker", tracker.setTracker);
 app.get("/tracker/:name/geojson", tracker.getTrackerGeoJson);
 app.delete("/tracker/:id", tracker.deleteTracker);
+app.get("/tracker/:name/validate", tracker.validateTracker);
 
 app.get("/regions", region.getRegions);
 app.post("/region", region.addRegion);

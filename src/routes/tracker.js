@@ -5,7 +5,7 @@ const { sendEmail } = require("../services/email");
 
 const getTrackers = (request, response) => {
   pool.query(
-    `SELECT t.*, r.name as "regionName" from tracker t LEFT OUTER JOIN regions r ON t.region_id = r.id;`,
+    `SELECT t.*, t.date_time as "lastSeen", r.name as "regionName" from tracker t LEFT OUTER JOIN regions r ON t.region_id = r.id;`,
     (error, results) => {
       if (error) {
         throw error;
@@ -78,8 +78,9 @@ const addTracker = async (request, response) => {
 };
 
 const setTracker = async (request, response) => {
-  const { name, latitude, longitude, dateTime } = request.body;
+  const { id, name, latitude, longitude, dateTime } = request.body;
   let regions = [];
+  const trackerId = id;
 
   try {
     await pool.query(`SELECT * FROM regions;`, (error, results) => {
@@ -90,6 +91,8 @@ const setTracker = async (request, response) => {
 
       const pointToCheck = point([longitude, latitude]);
       let regionId;
+      let regionName;
+      let isPointInPoly = false;
 
       regions.every((region) => {
         const polyStringArray = region.polygon.split(";");
@@ -98,39 +101,44 @@ const setTracker = async (request, response) => {
           polyArray.push(item.split(",").map((coord) => parseFloat(coord)))
         );
         const polygonToCheck = polygon([polyArray]);
-        const isPointInPoly = booleanPointInPolygon(
-          pointToCheck,
-          polygonToCheck
-        );
+        isPointInPoly = booleanPointInPolygon(pointToCheck, polygonToCheck);
 
         if (isPointInPoly) {
           regionId = region.id;
-          const emailContent = `Tracker : ${name}, Region : ${region.name}`;
-          sendEmail(emailContent);
-
-          console.log("POINT IN POLY : ", pointToCheck, region.name, regionId);
-
+          regionName = region.name;
+          console.log("POINT IN POLY : ", region.name, regionId);
           return false;
         }
         return true;
       });
 
       pool.query(
-        `INSERT INTO public.tracker ("name", latitude, longitude, region_id)
-        VALUES($1, $2, $3, $4)
-        on conflict (name)
-        do
-          UPDATE set latitude=$2, longitude=$3, region_id=$4 RETURNING *;`,
-        [name, latitude, longitude, regionId],
+        `SELECT * from tracker WHERE id = $1;`,
+        [trackerId],
         (error, results) => {
-          response.status(200).json(results.rows[0]);
-        }
-      );
+          const currentRegionId = results.rows[0].region_id;
+          const email = results.rows[0].email;
 
-      pool.query(
-        `INSERT INTO public.archive ("name", latitude, longitude, date_time, date_time_z)
-        VALUES($1, $2, $3, $4, $5) RETURNING *`,
-        [name, latitude, longitude, dateTime, dateTime]
+          if ((currentRegionId || regionId) && regionId !== currentRegionId) {
+            const status = regionId ? "Enter" : "Leave";
+            const emailContent = `Tracker : ${name}, Region : ${regionName}, Status: ${status}`;
+            sendEmail(emailContent, email);
+          }
+
+          pool.query(
+            `UPDATE tracker SET latitude=$1, longitude=$2, region_id=$3, date_time=$4 WHERE name IN ($5) RETURNING *;`,
+            [latitude, longitude, regionId, dateTime, name],
+            (error, results) => {
+              response.status(200).json(results.rows[0]);
+            }
+          );
+
+          pool.query(
+            `INSERT INTO public.archive ("name", latitude, longitude, date_time, date_time_z)
+            VALUES($1, $2, $3, $4, $5)`,
+            [name, latitude, longitude, dateTime, dateTime]
+          );
+        }
       );
     });
   } catch (error) {
@@ -146,7 +154,7 @@ const deleteTracker = (request, response) => {
 
   try {
     pool.query(
-      `DELETE FROM tracker WHERE id =$1;`,
+      `DELETE FROM tracker WHERE id=$1;`,
       [trackerId],
       (error, results) => {
         if (error) {
@@ -161,10 +169,39 @@ const deleteTracker = (request, response) => {
   response.status(200).json({});
 };
 
+const validateTracker = (request, response) => {
+  let trackerName = request.params.name;
+  trackerName = trackerName.toLowerCase();
+  pool.query(
+    `SELECT t.id, t.name FROM tracker t WHERE LOWER(t.name)=$1`,
+    [trackerName],
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      if (results.rows.length) {
+        const res = {
+          tracker: results.rows[0],
+          message: "Valid tracker",
+        };
+        response.status(200).json(results.rows[0]);
+      } else {
+        const errorResponse = {
+          error: "Not found",
+          code: 404,
+          message: "Tracker not found",
+        };
+        response.status(404).json(errorResponse);
+      }
+    }
+  );
+};
+
 module.exports = {
   getTrackers,
   addTracker,
   setTracker,
   getTrackerGeoJson,
   deleteTracker,
+  validateTracker,
 };

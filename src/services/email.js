@@ -11,10 +11,10 @@ const msg = {
   html: "<strong>and easy to do anywhere, even with Node.js</strong>",
 };
 
-const sendEmail = (text) => {
-
+const sendEmail = (text, recipient) => {
   // TODO FORMAT EMAIL
   msg.html = `<strong>${text}<strong>`;
+  msg.to = recipient;
   sgMail
     .send(msg)
     .then(() => {
