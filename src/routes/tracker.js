@@ -114,7 +114,7 @@ const setTracker = async (request, response) => {
         return true;
       });
       pool.query(
-        `SELECT t.region_id, r.name AS "regionName" FROM tracker t LEFT OUTER JOIN regions r ON t.region_id = r.id WHERE t.id = $1;`,
+        `SELECT t.region_id, t.email, r.name AS "regionName" FROM tracker t LEFT OUTER JOIN regions r ON t.region_id = r.id WHERE t.id = $1;`,
         [trackerId],
         (error, results) => {
           const currentRegionId = results.rows[0].region_id;
