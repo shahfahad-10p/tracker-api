@@ -5,7 +5,7 @@ const { sendEmail } = require("../services/email");
 
 const getTrackers = (request, response) => {
   pool.query(
-    `SELECT t.*, t.date_time as "lastSeen", r.name as "regionName" from tracker t LEFT OUTER JOIN regions r ON t.region_id = r.id;`,
+    `SELECT t.*, t.date_time as "lastSeen", r.name as "regionName" from tracker t LEFT OUTER JOIN regions r ON t.region_id = r.id ORDER BY t.id;`,
     (error, results) => {
       if (error) {
         throw error;
@@ -20,9 +20,10 @@ const getTrackerGeoJson = async (request, response) => {
 
   try {
     console.log("GET GEOJSON PARAMS : ", trackerName);
-    const dbResult = await pool.query(`SELECT * FROM archive WHERE name=$1;`, [
-      trackerName,
-    ]);
+    const dbResult = await pool.query(
+      `SELECT * FROM archive WHERE name=$1 order by id desc ;`,
+      [trackerName]
+    );
 
     const geojson = {
       type: "FeatureCollection",
@@ -34,6 +35,8 @@ const getTrackerGeoJson = async (request, response) => {
         type: "Feature",
         properties: {
           name: event.name,
+          lastSeen: event.date_time,
+          lastSeenZ: event.date_time_z,
         },
         geometry: {
           type: "Point",
@@ -43,7 +46,6 @@ const getTrackerGeoJson = async (request, response) => {
       geojson.features.push(feature);
     });
 
-    console.log("GET GEOJSON : ", geojson);
     response.status(200).json(geojson);
   } catch (error) {}
 };
@@ -111,17 +113,19 @@ const setTracker = async (request, response) => {
         }
         return true;
       });
-
       pool.query(
-        `SELECT * from tracker WHERE id = $1;`,
+        `SELECT t.region_id, r.name AS "regionName" FROM tracker t LEFT OUTER JOIN regions r ON t.region_id = r.id WHERE t.id = $1;`,
         [trackerId],
         (error, results) => {
           const currentRegionId = results.rows[0].region_id;
+          const currentRegionName = results.rows[0].regionName;
           const email = results.rows[0].email;
 
           if ((currentRegionId || regionId) && regionId !== currentRegionId) {
             const status = regionId ? "Enter" : "Leave";
-            const emailContent = `Tracker : ${name}, Region : ${regionName}, Status: ${status}`;
+            const emailRegionName =
+              status === "Enter" ? regionName : currentRegionName;
+            const emailContent = `Tracker : ${name}, Region : ${emailRegionName}, Status: ${status}`;
             sendEmail(emailContent, email);
           }
 
@@ -171,9 +175,9 @@ const deleteTracker = (request, response) => {
 
 const validateTracker = (request, response) => {
   let trackerName = request.params.name;
-  trackerName = trackerName.toLowerCase();
+
   pool.query(
-    `SELECT t.id, t.name FROM tracker t WHERE LOWER(t.name)=$1`,
+    `SELECT t.id, t.name FROM tracker t WHERE t.name=$1`,
     [trackerName],
     (error, results) => {
       if (error) {

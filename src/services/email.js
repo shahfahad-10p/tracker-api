@@ -6,9 +6,9 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const msg = {
   to: "sfahad@khi.iba.edu.pk", // Change to your recipient
   from: "fahad_masood91@hotmail.com", // Change to your verified sender
-  subject: "Sending with SendGrid is Fun",
+  subject: "M11 Notification - Tracker Update",
   // text: "and easy to do anywhere, even with Node.js",
-  html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+  html: "",
 };
 
 const sendEmail = (text, recipient) => {
